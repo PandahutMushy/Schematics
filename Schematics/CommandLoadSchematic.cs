@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Rocket.API;
 using Rocket.Unturned.Chat;
@@ -56,13 +57,55 @@ namespace Schematics
             River river = ServerSavedata.openRiver("/Rocket/Plugins/Schematics", isReading: false);
             river.writeByte(Schematics.PluginVerison);
             river.writeUInt32(Provider.time);
+            int error = 0;
             foreach (var barricade in Barricades)
             {
                 if (BarricadeManager.tryGetInfo(barricade, out var x, out var y, out var plant, out var index, out var r))
                 {
                     var bdata = r.barricades[index];
+                    river.writeUInt16(bdata.barricade.id);
+                    river.writeUInt16(bdata.barricade.health);
+                    river.writeBytes(bdata.barricade.state);
+                    river.writeSingleVector3(bdata.point);
+                    river.writeByte(bdata.angle_x);
+                    river.writeByte(bdata.angle_y);
+                    river.writeByte(bdata.angle_z);
+                    river.writeUInt64(bdata.owner);
+                    river.writeUInt64(bdata.group);
+                    river.writeUInt32(bdata.objActiveDate);
+                }
+                else
+                {
+                    error++;
                 }
             }
+            if (error != 0)
+                Logger.Log($"Unexpected Error occured {error} times");
+            error = 0;
+            river.writeUInt16(UInt16.MinValue);
+            foreach (var structure in Structures)
+            {
+                if (StructureManager.tryGetInfo(structure, out var x, out var y, out var index, out var r))
+                {
+                    var sdata = r.structures[index];
+                    river.writeUInt16(sdata.structure.id);
+                    river.writeUInt16(sdata.structure.health);
+                    river.writeSingleVector3(sdata.point);
+                    river.writeByte(sdata.angle_x);
+                    river.writeByte(sdata.angle_y);
+                    river.writeByte(sdata.angle_z);
+                    river.writeUInt64(sdata.owner);
+                    river.writeUInt64(sdata.group);
+                    river.writeUInt32(sdata.objActiveDate);
+                }
+                else
+                {
+                    error++;
+                }
+            }
+            if (error != 0)
+                Logger.Log($"Unexpected Error occured {error} times");
+            river.closeRiver();
         }
     }
 }
