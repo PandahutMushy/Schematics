@@ -18,7 +18,7 @@ namespace Schematics
 
         public string Syntax => "<Range>";
 
-        public List<string> Aliases => new List<string>();
+        public List<string> Aliases => new List<string> { "SS" };
 
         public AllowedCaller AllowedCaller => AllowedCaller.Both;
 
@@ -31,12 +31,11 @@ namespace Schematics
             
             if (command == null || command.Length == 0 || command.Length == 1 || string.IsNullOrWhiteSpace(command[0]) || !int.TryParse(command[1], out int radius))
             {
-                UnturnedChat.Say($"Invalid Syntax, use /SaveSchematic <distance> [Optional Parameters: -Everyone -ID64 -Hitmarker");
+                UnturnedChat.Say($"Invalid Syntax, use /SaveSchematic <name> <distance> [Optional Parameters: -Everyone -ID64 -Hitmarker");
                 return;
             }
             string name = command[0].Replace(" ", "");
             List<Transform> Barricades = new List<Transform>();
-            BarricadeManager.getBarricadesInRadius(player.Position, radius ^ 2, Barricades);
             List<Transform> Structures = new List<Transform>();
             List<RegionCoordinate> Coordinates = new List<RegionCoordinate>();
             for (byte b = 0; b < Regions.WORLD_SIZE; b = (byte) (b + 1))
@@ -53,10 +52,11 @@ namespace Schematics
            {
                Coordinates.Add(new RegionCoordinate((byte)player.Position.x, (byte)player.Position.y));
             }
-            StructureManager.getStructuresInRadius(player.Position, radius ^ 2, Coordinates, Structures);
-            Logger.Log($"We have found Structures: {Structures.Count} and Barricades: {Barricades.Count}");
+            StructureManager.getStructuresInRadius(player.Position, (float)radius, Coordinates, Structures);
+            BarricadeManager.getBarricadesInRadius(player.Position, (float)radius, Coordinates, Barricades);
+            Logger.Log($"We have found Structures: {Structures.Count}, Structure Regions {Coordinates.Count} and Barricades: {Barricades.Count}");
             Logger.Log($"Loading up the .dat");
-            River river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/saved/{name}.dat", isReading: false);
+            River river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: false);
             river.writeByte(Schematics.PluginVerison);
             river.writeUInt32(Provider.time);
             river.writeInt32(Barricades.Count);
@@ -109,7 +109,7 @@ namespace Schematics
             if (error != 0)
                 Logger.Log($"Unexpected Structure Error occured {error} times");
             river.closeRiver();
-            UnturnedChat.Say($"Done, we have saved Structures: {Structures.Count} and Barricades: {Barricades.Count} to {name}");
+            UnturnedChat.Say(player, $"Done, we have saved Structures: {Structures.Count} and Barricades: {Barricades.Count} to {name}");
         }
     }
 }

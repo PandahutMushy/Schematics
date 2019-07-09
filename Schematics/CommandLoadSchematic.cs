@@ -11,13 +11,13 @@ namespace Schematics
 {
     internal class CommandCheckDriver : IRocketCommand
     {
-        public string Help => "Saves Schematic";
+        public string Help => "Loads Schematic";
 
         public string Name => "LoadSchematic";
 
         public string Syntax => "<Name>";
 
-        public List<string> Aliases => new List<string>();
+        public List<string> Aliases => new List<string> { "LS" };
 
         public AllowedCaller AllowedCaller => AllowedCaller.Both;
 
@@ -88,7 +88,7 @@ namespace Schematics
             if (error != 0)
                 Logger.Log($"Unexpected Barricade Error occured {error} times");
 
-            UnturnedChat.Say($"Done, we have loaded Structures: {structurecountInt32} and Barricades: {barricadecountInt32} from {name}");
+            UnturnedChat.Say(player, $"Done, we have loaded Structures: {structurecountInt32} and Barricades: {barricadecountInt32} from {name}");
         }
     }
 }
