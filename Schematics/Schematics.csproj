@@ -64,8 +64,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CommandLoadSchematic.cs" />
     <Compile Include="CommandSaveSchematic.cs" />
+    <Compile Include="CommandLoadSchematic.cs" />
     <Compile Include="Schematics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SchematicsConfiguration.cs" />

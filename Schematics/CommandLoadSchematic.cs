@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Rocket.API;
 using Rocket.Unturned.Chat;
 using Rocket.Unturned.Player;
@@ -10,102 +9,86 @@ using Logger = Rocket.Core.Logging.Logger;
 
 namespace Schematics
 {
-    internal class CommandLoadSchematics : IRocketCommand
+    internal class CommandCheckDriver : IRocketCommand
     {
         public string Help => "Saves Schematic";
 
-        public string Name => "SaveSchematic";
+        public string Name => "LoadSchematic";
 
-        public string Syntax => "<Range>";
+        public string Syntax => "<Name>";
 
         public List<string> Aliases => new List<string>();
 
         public AllowedCaller AllowedCaller => AllowedCaller.Both;
 
-        public List<string> Permissions => new List<string> { "driver.check" };
+        public List<string> Permissions => new List<string> { "schematic.load" };
 
         public void Execute(IRocketPlayer caller, string[] command)
         {
-            // Command: /saveSchematic
             var player = (UnturnedPlayer)caller;
-            if (command.Length == 1 || !int.TryParse(command[1], out int radius))
+
+            if (command == null || command.Length == 0 || string.IsNullOrWhiteSpace(command[0]))
             {
-                UnturnedChat.Say($"Invalid Syntax, use /SaveSchematic <distance> [Optional Parameters: -Everyone -ID64 -Hitmarker");
+                UnturnedChat.Say($"Invalid Syntax, use /Loadschematic <Name> [-CurrentPos] [-Hitmarker] [-NoState]");
                 return;
             }
-            List<Transform> Barricades = new List<Transform>();
-            BarricadeManager.getBarricadesInRadius(player.Position, radius ^ 2, Barricades);
-            List<Transform> Structures = new List<Transform>();
-            List<RegionCoordinate> Coordinates = new List<RegionCoordinate>();
-            for (byte b = 0; b < Regions.WORLD_SIZE; b = (byte) (b + 1))
-            {
-                for (byte b2 = 0; b2 < Regions.WORLD_SIZE; b2 = (byte) (b2 + 1))
-                {
-                    if (Vector3.Distance(new Vector3(b,player.Position.y, b2), player.Position) < radius)
-                       Coordinates.Add(new RegionCoordinate(b, b2));
-                   
-                }
-            }
-
-           if(StructureManager.tryGetRegion((byte) player.Position.x, (byte) player.Position.y, out StructureRegion region) && !Coordinates.Any(coord => coord.x == (byte) player.Position.x && coord.y == (byte)player.Position.y))
-           {
-               Coordinates.Add(new RegionCoordinate((byte)player.Position.x, (byte)player.Position.y));
-            }
-            StructureManager.getStructuresInRadius(player.Position, radius ^ 2, Coordinates, Structures);
-            Logger.Log($"We have found Structures: {Structures.Count} and Barricades: {Barricades.Count}");
-            Logger.Log($"Loading up the .dat");
-            River river = ServerSavedata.openRiver("/Rocket/Plugins/Schematics", isReading: false);
-            river.writeByte(Schematics.PluginVerison);
-            river.writeUInt32(Provider.time);
+            var keepHealth = true;
+            string name = command[0].Replace(" ", "");
+            River river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: false);
+            byte verison = river.readByte();
+            var Time = river.readUInt32();
+            var barricadecountInt32 = river.readInt32();
+            Logger.Log($"Time {Time}");
             int error = 0;
-            foreach (var barricade in Barricades)
+            for (int i = 0; i < barricadecountInt32; i++)
             {
-                if (BarricadeManager.tryGetInfo(barricade, out var x, out var y, out var plant, out var index, out var r))
-                {
-                    var bdata = r.barricades[index];
-                    river.writeUInt16(bdata.barricade.id);
-                    river.writeUInt16(bdata.barricade.health);
-                    river.writeBytes(bdata.barricade.state);
-                    river.writeSingleVector3(bdata.point);
-                    river.writeByte(bdata.angle_x);
-                    river.writeByte(bdata.angle_y);
-                    river.writeByte(bdata.angle_z);
-                    river.writeUInt64(bdata.owner);
-                    river.writeUInt64(bdata.group);
-                    river.writeUInt32(bdata.objActiveDate);
-                }
-                else
-                {
-                    error++;
-                }
+               var barricadeid = river.readUInt16();
+               var barricadehealth =  river.readUInt16();
+               var barricadestate = river.readBytes();
+               var point =  river.readSingleVector3();
+               var angleX = river.readByte();
+               var angleY = river.readByte();
+               var angleZ = river.readByte();
+               var owner = river.readUInt64();
+               var group =  river.readUInt64();
+               var objActiveDate = river.readUInt32();
+               Barricade barricade = new Barricade(barricadeid);
+               if (keepHealth)
+                   barricade.health = barricadehealth;
+               barricade.state = barricadestate;
+
+               // For when nelson adds proper way to add barricades
+               BarricadeData barricadeData = new BarricadeData(barricade, point, angleX, angleY, angleZ, owner, group, objActiveDate);
+               if (!BarricadeManager.dropBarricade(barricade, null, point, angleX, angleY, angleZ, owner, group))
+                   error++;
             }
             if (error != 0)
-                Logger.Log($"Unexpected Error occured {error} times");
+                Logger.Log($"Unexpected Barricade Error occured {error} times");
             error = 0;
-            river.writeUInt16(UInt16.MinValue);
-            foreach (var structure in Structures)
+            var structurecountInt32 = river.readInt32();
+            for (int i = 0; i < structurecountInt32; i++)
             {
-                if (StructureManager.tryGetInfo(structure, out var x, out var y, out var index, out var r))
-                {
-                    var sdata = r.structures[index];
-                    river.writeUInt16(sdata.structure.id);
-                    river.writeUInt16(sdata.structure.health);
-                    river.writeSingleVector3(sdata.point);
-                    river.writeByte(sdata.angle_x);
-                    river.writeByte(sdata.angle_y);
-                    river.writeByte(sdata.angle_z);
-                    river.writeUInt64(sdata.owner);
-                    river.writeUInt64(sdata.group);
-                    river.writeUInt32(sdata.objActiveDate);
-                }
-                else
-                {
-                    error++;
-                }
+               var structureid = river.readUInt16();
+               var structurehealth =  river.readUInt16();
+               var point = river.readSingleVector3();
+               var angleX = river.readByte();
+               var angleY = river.readByte();
+               var angleZ = river.readByte();
+               var owner = river.readUInt64();
+               var group = river.readUInt64();
+               var objActiveDate = river.readUInt32();
+               Structure structure = new Structure(structureid);
+               if (keepHealth)
+                   structure.health = structureid;
+               // For when nelson adds proper way to add structures
+               StructureData structureData = new StructureData(structure, point, angleX, angleY, angleZ, owner, group, objActiveDate);
+               if (!StructureManager.dropStructure(structure, point, angleX, angleY, angleZ, owner, group))
+                   error++;
             }
             if (error != 0)
-                Logger.Log($"Unexpected Error occured {error} times");
-            river.closeRiver();
+                Logger.Log($"Unexpected Barricade Error occured {error} times");
+
+            UnturnedChat.Say($"Done, we have loaded Structures: {structurecountInt32} and Barricades: {barricadecountInt32} from {name}");
         }
     }
 }
