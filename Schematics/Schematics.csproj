@@ -7,7 +7,7 @@
     <ProjectGuid>{B08DC896-98B2-4EBE-AF9B-EF2BC0175DED}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Schematics</RootNamespace>
+    <RootNamespace>Pandahut.Schematics</RootNamespace>
     <AssemblyName>Schematics</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -37,6 +37,12 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>..\lib\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
+    <Reference Include="I18N.West, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
+      <HintPath>..\..\Libs\I18N.West.dll</HintPath>
+    </Reference>
+    <Reference Include="MySql.Data">
+      <HintPath>..\..\Libs\MySql.Data.dll</HintPath>
+    </Reference>
     <Reference Include="Rocket.API">
       <HintPath>..\lib\Rocket.API.dll</HintPath>
     </Reference>
@@ -46,29 +52,28 @@
     <Reference Include="Rocket.Unturned">
       <HintPath>..\lib\Rocket.Unturned.dll</HintPath>
     </Reference>
-    <Reference Include="RocketRegions">
-      <HintPath>..\lib\RocketRegions.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
     <Reference Include="UnityEngine">
       <HintPath>..\lib\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\lib\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>..\..\Libs\UnityEngine.PhysicsModule.dll</HintPath>
+      <Aliases>UnityEnginePhysics</Aliases>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommandSaveSchematic.cs" />
     <Compile Include="CommandLoadSchematic.cs" />
+    <Compile Include="CommandUndo.cs" />
     <Compile Include="Schematics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SchematicsConfiguration.cs" />
+    <Compile Include="SchematicsDatabase.cs" />
+    <Compile Include="ViewSchematic.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="lib\" />
