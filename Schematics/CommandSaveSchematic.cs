@@ -11,6 +11,27 @@ using Logger = Rocket.Core.Logging.Logger;
 
 namespace Pandahut.Schematics
 {
+    public class BarricadeDataInternal
+    {
+        public BarricadeData bdata;
+        public bool plant;
+        public BarricadeDataInternal(BarricadeData structureData, bool Plant)
+        {
+            this.bdata = structureData;
+            this.plant = Plant;
+        }
+    }
+    public class StructureDataInternal
+    {
+        public StructureData sdata;
+        public bool plant;
+
+        public StructureDataInternal(StructureData structureData, bool Plant)
+        {
+            this.sdata = structureData;
+            this.plant = Plant;
+        }
+    }
     internal class CommandSaveSchematics : IRocketCommand
     {
         public string Help => "Saves Schematic";
@@ -46,45 +67,46 @@ namespace Pandahut.Schematics
             var match = Schematics.steamid64Regex.Match(fullcommand);
             if (match.Success && ulong.TryParse(match.Value, out var result))
                 SpecificSteamid64 = result;
+            Logger.Log($"Specific Steamid64: {SpecificSteamid64}, Group Only: {GroupOnly}");
             radius += 92;
             var name = command[0].Replace(" ", "");
-            var Barricades = GetBarricadeTransforms(player, radius, SpecificSteamid64, GroupOnly );
+            var Barricades = GetBarricadeTransforms(player, radius, SpecificSteamid64, GroupOnly);
             var Structures = GetStructureTransforms(player, radius, SpecificSteamid64, GroupOnly);
-            Logger.Log($"We have found Structures: {Structures.Count}  and Barricades: {Barricades.Count}");
+            //Logger.Log($"We have found Structures: {Structures.Count}  and Barricades: {Barricades.Count}");
             var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", false);
             river.writeByte(Schematics.PluginVerison);
+            river.writeBoolean(Schematics.Instance.Configuration.Instance.UseDatabase);
             river.writeUInt32(Provider.time);
             river.writeSingleVector3(player.Position);
             river.writeInt32(Barricades.Count);
             river.writeInt32(Structures.Count);
             foreach (var bdata in Barricades)
-            {
-                river.writeUInt16(bdata.barricade.id);
-                river.writeUInt16(bdata.barricade.health);
-                river.writeBytes(bdata.barricade.state);
-                river.writeSingleVector3(bdata.point);
-                river.writeByte(bdata.angle_x);
-                river.writeByte(bdata.angle_y);
-                river.writeByte(bdata.angle_z);
-                river.writeUInt64(bdata.owner);
-                river.writeUInt64(bdata.group);
-                river.writeUInt32(bdata.objActiveDate);
+            { 
+                river.writeUInt16(bdata.bdata.barricade.id);
+                river.writeUInt16(bdata.bdata.barricade.health);
+                river.writeBytes(bdata.bdata.barricade.state);
+                river.writeSingleVector3(bdata.bdata.point);
+                river.writeByte(bdata.bdata.angle_x);
+                river.writeByte(bdata.bdata.angle_y);
+                river.writeByte(bdata.bdata.angle_z);
+                river.writeUInt64(bdata.bdata.owner);
+                river.writeUInt64(bdata.bdata.group);
+                river.writeUInt32(bdata.bdata.objActiveDate);
             }
             foreach (var sdata in Structures)
             {
-                river.writeUInt16(sdata.structure.id);
-                river.writeUInt16(sdata.structure.health);
-                river.writeSingleVector3(sdata.point);
-                river.writeByte(sdata.angle_x);
-                river.writeByte(sdata.angle_y);
-                river.writeByte(sdata.angle_z);
-                river.writeUInt64(sdata.owner);
-                river.writeUInt64(sdata.group);
-                river.writeUInt32(sdata.objActiveDate);
+                river.writeUInt16(sdata.sdata.structure.id);
+                river.writeUInt16(sdata.sdata.structure.health);
+                river.writeSingleVector3(sdata.sdata.point);
+                river.writeByte(sdata.sdata.angle_x);
+                river.writeByte(sdata.sdata.angle_y);
+                river.writeByte(sdata.sdata.angle_z);
+                river.writeUInt64(sdata.sdata.owner);
+                river.writeUInt64(sdata.sdata.group);
+                river.writeUInt32(sdata.sdata.objActiveDate);
             }
 
             river.closeRiver();
-            bool saveLocally = false;
             if (Schematics.Instance.Configuration.Instance.UseDatabase)
                 try
                 {
@@ -97,18 +119,17 @@ namespace Pandahut.Schematics
                 }
                 catch (Exception e)
                 {
-                    saveLocally = true;
                     Logger.Log("Issue uploading file to your database, it has been saved locally instead.");
                 }
-
+            
             SendMessageAndLog(player, $"Done, we have saved Structures: {Structures.Count} and Barricades: {Barricades.Count} to {(Schematics.Instance.Configuration.Instance.UseDatabase ? "Database and Files" : "Files")} called {name}.", $"Saved {Structures.Count + Barricades.Count} elements for {player.CharacterName} to {(Schematics.Instance.Configuration.Instance.UseDatabase ? "Database and Files" : "Files")} called {name}.");
         }
 
-        public List<StructureData> GetStructureTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly)
+        public List<StructureDataInternal> GetStructureTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly)
         {
             var position = player.Position;
             var error = 0;
-            var Structures = new List<StructureData>();
+            var Structures = new List<StructureDataInternal>();
             var transforms = 0;
             StructureData structure;
             var regionsfound = 0;
@@ -129,7 +150,8 @@ namespace Pandahut.Schematics
                 for (var i = 0; i < transforms; i++)
                 {
                     transform = structureRegion.drops[i].model;
-                    if (structureRegion.structures[i] == null) { error++;  continue;}
+                    var Plant = transform.parent != null && transform.parent.CompareTag("Vehicle");
+                        if (structureRegion.structures[i] == null) { error++;  continue;}
                     structure = structureRegion.structures[i];
                     if (GroupOnly)
                         if (structure.group != player.SteamGroupID.m_SteamID)
@@ -137,25 +159,26 @@ namespace Pandahut.Schematics
                     if (SpecificSteamid64 != 0)
                         if (structure.owner != SpecificSteamid64)
                             continue;
-                    if (Vector3.Distance(position, transform.position) < radius - 92)
-                        Structures.Add(structureRegion.structures[i]);
+                    if (Vector3.Distance(position, transform.position) < radius - 92 && !Plant)
+                        Structures.Add(new StructureDataInternal(structureRegion.structures[i], transform.parent != null && transform.parent.CompareTag("Vehicle") ? true : false));
                 }
             }
 
-            Logger.Log($"We have found {regionsfound} regions and used {regionsused} of them.");
+            //Logger.Log($"We have found {regionsfound} regions and used {regionsused} of them.");
             if (error != 0)
                 SendMessageAndLog(player, "It seems your structure regions are a bit of sync, if you have issues, gotta restart server. This issue may be caused by one of your plugins.", $"Error on executing SaveSchematic command for {player.CharacterName},it seems structure regions are out of sync, gotta restart if this causes issues. Sorry! This could be caused by a server plugin, or just getting unlucky.");
             return Structures;
         }
 
-        public List<BarricadeData> GetBarricadeTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly)
+        public List<BarricadeDataInternal> GetBarricadeTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly)
         {
             var position = player.Position;
             var error = 0;
-            var Barricades = new List<BarricadeData>();
+            var Barricades = new List<BarricadeDataInternal>();
             var transforms = 0;
             var regionsfound = 0;
             var regionsused = 0;
+            bool Plant;
             Vector3 pointVector3;
             BarricadeData barricade;
             BarricadeRegion barricadeRegion = null;
@@ -174,7 +197,13 @@ namespace Pandahut.Schematics
                 for (var i = 0; i < transforms; i++)
                 {
                     transform = barricadeRegion.drops[i].model;
-                    if (barricadeRegion.barricades[i] == null) { error++; continue; }
+                    Plant = transform.parent != null && transform.parent.CompareTag("Vehicle");
+                        if (barricadeRegion.barricades[i] == null)
+                    {
+                        error++;
+                        continue;
+                    }
+
                     barricade = barricadeRegion.barricades[i];
                     if (GroupOnly)
                         if (barricade.group != player.SteamGroupID.m_SteamID)
@@ -183,12 +212,12 @@ namespace Pandahut.Schematics
                         if (barricade.owner != SpecificSteamid64)
                             continue;
 
-                    if (Vector3.Distance(position, transform.position) < radius - 92)
-                        Barricades.Add(barricade);
+                    if (Vector3.Distance(position, transform.position) < radius - 92 && !Plant)
+                        Barricades.Add(new BarricadeDataInternal(barricadeRegion.barricades[i], transform.parent != null && transform.parent.CompareTag("Vehicle") ? true : false));
                 }
             }
 
-            Logger.Log($"We have found {regionsfound} regions and used {regionsused} of them.");
+            //Logger.Log($"We have found {regionsfound} regions and used {regionsused} of them.");
             if (error != 0)
                 SendMessageAndLog(player, "It seems your barricade regions are a bit of sync, if you have issues, gotta restart server. This issue may be caused by one of your plugins.", $"Error on executing SaveSchematic command for {player.CharacterName},it seems barricade regions are out of sync, gotta restart if this causes issues. Sorry! This could be caused by a server plugin, or just getting unlucky.");
             return Barricades;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Eventing.Reader;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Remoting.Messaging;
@@ -45,8 +46,30 @@ namespace Pandahut.Schematics
             ConfigCheck();
             Instance = this;
             if (Configuration.Instance.UseDatabase)
+            {
                 SchematicsDatabaseManager = new DatabaseManager();
+                System.IO.DirectoryInfo di = new DirectoryInfo(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/");
+                foreach (FileInfo file in di.GetFiles())
+                {
+                    var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{file.Name}", isReading: true);
+                    try
+                    {
+                        var verison = river.readByte();
+                        var useDatabase = river.readBoolean();
+                        if (!useDatabase)
+                            file.Delete();
+                        river.closeRiver();
+                    }
+                    catch (Exception _)
+                    {
+                        river.closeRiver();
+                    }
+
+                }
+            }
+
             Logger.Log($"Welcome to Schematics!");
+            
         }
 
         protected override void Unload()
@@ -81,12 +104,6 @@ namespace Pandahut.Schematics
             {
                 Logger.Log($"You're missing MaxSpawnDistance in Config, defaulting to 300");
                 Configuration.Instance.MaxSpawnDistance = 300;
-                Configuration.Save();
-            }
-            if (Configuration.Instance.SaveDBSchematicsLocally == null)
-            {
-                Logger.Log($"You're missing SaveDBSchematicsLocally in Config, defaulting to False");
-                Configuration.Instance.SaveDBSchematicsLocally = false;
                 Configuration.Save();
             }
         }

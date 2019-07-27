@@ -131,5 +131,23 @@ namespace Pandahut.Schematics
                 Logger.LogException(ex);
             }
         }
+        public bool DeleteSchematic(int id)
+        {
+            try
+            {
+                var connection = CreateConnection();
+                var command = connection.CreateCommand();
+                command.CommandText = $"DELETE FROM `{Schematics.Instance.Configuration.Instance.SchematicsDatabaseInfo.DatabaseTableName}` WHERE `{Schematics.Instance.Configuration.Instance.SchematicsDatabaseInfo.DatabaseTableName}`.`id` = {id}; ";
+                connection.Open();
+                command.ExecuteNonQuery();
+                connection.Dispose();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogException(ex);
+                return false;
+            }
+        }
     }
 }

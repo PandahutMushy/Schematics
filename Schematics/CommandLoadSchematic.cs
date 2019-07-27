@@ -19,7 +19,7 @@ namespace Pandahut.Schematics
 
         public string Syntax => "<Name>";
 
-        public List<string> Aliases => new List<string> { "LS", "LoadS" };
+        public List<string> Aliases => new List<string> { "LS", "LoadS", "ls" };
 
         public AllowedCaller AllowedCaller => AllowedCaller.Both;
 
@@ -31,7 +31,7 @@ namespace Pandahut.Schematics
 
             if (command == null || command.Length == 0 || string.IsNullOrWhiteSpace(command[0]))
             {
-                UnturnedChat.Say(player, $"Invalid Syntax, use /Loadschematic <Name> [Optional: -KeepPos -NoState -KeepHealth -SetOwner -SetGroup, Input any Steamid64 to set owner to it]");
+                UnturnedChat.Say(caller, $"Invalid Syntax, use /Loadschematic <Name> [Optional: -KeepPos -NoState -KeepHealth -SetOwner -SetGroup, Input any Steamid64 to set owner to it]");
                 return;
             }
 
@@ -61,7 +61,7 @@ namespace Pandahut.Schematics
             if (fullcommand.Contains("-setowner"))
                 SpecificSteamid64 = player.CSteamID.m_SteamID;
             if (fullcommand.Contains("-setgroup"))
-                specificgroup = player.SteamGroupID.m_SteamID;
+                specificgroup = player.Player.quests.groupID.m_SteamID;
             var match = Schematics.steamid64Regex.Match(fullcommand);
             if (match.Success && ulong.TryParse(match.Value, out var result))
                 SpecificSteamid64 = result;
@@ -71,18 +71,26 @@ namespace Pandahut.Schematics
                var Schematic =  Schematics.Instance.SchematicsDatabaseManager.GetSchematicByName(name);
                if (Schematic == null)
                {
-                   UnturnedChat.Say($"Cannot find {name} in Database");
+                   UnturnedChat.Say(caller, $"Cannot find {name} in Database");
                    return;
                }
-               var fs = new FileStream(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat", FileMode.OpenOrCreate, FileAccess.Write);
+               var fs = new FileStream(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat", FileMode.Create, FileAccess.ReadWrite);
                fs.Write(Schematic.SchmeticBytes, 0, (int)Schematic.Length);
                fs.Close();
             }
-            River river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: false);
+            River river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: true);
+            
             byte verison = river.readByte();
+            var useDatabase = river.readBoolean();
             var Time = river.readUInt32();
+            if (DateTimeOffset.FromUnixTimeSeconds(Time).ToLocalTime() == DateTimeOffset.MinValue)
+            {
+                UnturnedChat.Say(caller, $"Cannot find {name}.");
+                return;
+            }
             var playerposition = river.readSingleVector3();
             UnturnedChat.Say(player, $"Loading {name} saved at {DateTimeOffset.FromUnixTimeSeconds(Time).ToLocalTime().ToString()}");
+            Logger.Log($"Loading {name} for {player.CharacterName} with parameters Keep Position: {keepLocation}, Keep Health: {keepHealth}, Keep State: {keepState}, Set Group = {SpecificSteamid64} Set Steamid64: {SpecificSteamid64}.");
             var barricadecountInt32 = river.readInt32();
             var structurecountInt32 = river.readInt32();
             int error = 0;
@@ -101,7 +109,7 @@ namespace Pandahut.Schematics
                Barricade barricade = new Barricade(barricadeid);
                if (keepHealth)
                    barricade.health = barricadehealth;
-               if (!keepState)
+               if (keepState)
                    barricade.state = barricadestate;
                if (!keepLocation)
                {
@@ -111,9 +119,9 @@ namespace Pandahut.Schematics
                    owner = SpecificSteamid64;
                if (specificgroup != 0)
                    group = specificgroup;
-               // For when nelson adds proper way to add barricades
-               BarricadeData barricadeData = new BarricadeData(barricade, point, angleX, angleY, angleZ, owner, group, Provider.time);
-               if (!BarricadeManager.dropBarricade(barricade, null, point, angleX, angleY, angleZ, owner, group))
+               var rotation = Quaternion.Euler(angleX * 2, angleY * 2, angleZ * 2);
+                //rotation.eulerAngles = new Vector3(angleX, angleY, angleZ);
+               if (!BarricadeManager.dropNonPlantedBarricade(barricade, point, rotation , owner, group))
                    error++;
             }
             if (error != 0)
@@ -132,18 +140,20 @@ namespace Pandahut.Schematics
                var objActiveDate = river.readUInt32();
                Structure structure = new Structure(structureid);
                if (keepHealth)
-                   structure.health = structureid;
+                   structure.health = structurehealth;
                 // For when nelson adds proper way to add structures
                 if (!keepLocation)
                 {
                     point = (point - playerposition) + hit.point;
                 }
+                
                 if (SpecificSteamid64 != 0)
                     owner = SpecificSteamid64;
                 if (specificgroup != 0)
                     group = specificgroup;
-                StructureData structureData = new StructureData(structure, point, angleX, angleY, angleZ, owner, group, Provider.time);
-               if (!StructureManager.dropStructure(structure, point, angleX, angleY, angleZ, owner, group))
+                var rotation = Quaternion.Euler(angleX * 2, angleY * 2, angleZ * 2);
+                //rotation.eulerAngles = new Vector3(angleX, angleY, angleZ);
+                if (!StructureManager.dropReplicatedStructure(structure, point, rotation, owner, group))
                    error++;
             }
             if (error != 0)

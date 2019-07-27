@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Rocket.API;
 using Rocket.Unturned.Chat;
@@ -28,37 +29,44 @@ namespace Pandahut.Schematics
 
         public void Execute(IRocketPlayer caller, string[] command)
         {
+            bool Console = caller is ConsolePlayer;
             if (command == null || command.Length == 0 || string.IsNullOrWhiteSpace(command[0]))
             {
-                UnturnedChat.Say(caller, $"Invalid Syntax, use /ViewSchematic <Name>");
+                SendMessage(caller, $"Invalid Syntax, use /ViewSchematic <Name>", Console);
                 return;
             }
-
             string name = command[0].Replace(" ", "");
             if (Schematics.Instance.Configuration.Instance.UseDatabase)
             {
                 var Schematic = Schematics.Instance.SchematicsDatabaseManager.GetSchematicByName(name);
                 if (Schematic == null)
                 {
-                    UnturnedChat.Say($"Cannot find {name} in Database");
+                    SendMessage(caller, $"Cannot find {name} in Database", Console);
                     return;
                 }
 
-                var fs = new FileStream(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat", FileMode.OpenOrCreate, FileAccess.Write);
+                var fs = new FileStream(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat", FileMode.Create, FileAccess.ReadWrite);
                 fs.Write(Schematic.SchmeticBytes, 0, (int) Schematic.Length);
                 fs.Close();
             }
 
-            var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: false);
+            var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: true);
             var verison = river.readByte();
+            var useDatabase = river.readBoolean();
             var Time = river.readUInt32();
             var playerposition = river.readSingleVector3();
             var barricadecountInt32 = river.readInt32();
             var structurecountInt32 = river.readInt32();
-            if (caller is ConsolePlayer)
-                Logger.Log($"{name} was saved at {DateTimeOffset.FromUnixTimeSeconds(Time).ToLocalTime().ToString()} with Plugin Verison {verison}, it has {barricadecountInt32} barricades and {structurecountInt32} structures, total {barricadecountInt32 + structurecountInt32} elements.");
+            river.closeRiver();
+            SendMessage(caller, $"{name} was saved at {DateTimeOffset.FromUnixTimeSeconds(Time).ToLocalTime().ToString()} with Plugin Verison {verison}, it has {barricadecountInt32} barricades and {structurecountInt32} structures, total {barricadecountInt32 + structurecountInt32} elements.", Console);
+        }
+
+        public void SendMessage(IRocketPlayer caller, string msg, bool Console)
+        {
+            if (Console)
+                Logger.Log(msg);
             else
-                UnturnedChat.Say(caller, $"{name} was saved at {DateTimeOffset.FromUnixTimeSeconds(Time).ToLocalTime().ToString()} with Plugin Verison {verison}, it has {barricadecountInt32} barricades and {structurecountInt32} structures, total {barricadecountInt32 + structurecountInt32} elements.");
+                UnturnedChat.Say(caller, msg);
         }
     }
 }
