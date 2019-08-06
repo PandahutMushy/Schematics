@@ -82,7 +82,7 @@ namespace Pandahut.Schematics
                 }
             }
 
-            Logger.Log($"Welcome to Schematics!");
+            Logger.Log($"Welcome to Schematics! -- If you need help, feel free to email contact@pandahut.net, contact Miku#2402 or join Our Discord @ https://pandahut.net/discord");
             
         }
 

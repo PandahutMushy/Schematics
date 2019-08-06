@@ -72,7 +72,7 @@
     <Compile Include="CommandSaveSchematic.cs" />
     <Compile Include="CommandLoadSchematic.cs" />
     <None Include="CommandUploadSchematic.cs" />
-    <Compile Include="CommandSelect.cs" />
+    <None Include="CommandSelect.cs" />
     <Compile Include="Schematics.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SchematicsConfiguration.cs" />
