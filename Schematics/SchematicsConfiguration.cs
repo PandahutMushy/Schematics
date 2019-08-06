@@ -9,13 +9,11 @@ namespace Pandahut.Schematics
     {
 
         public bool UseDatabase;
-        public float MaxSpawnDistance;
         public DatabaseInfo SchematicsDatabaseInfo;
 
         public void LoadDefaults()
         {
             UseDatabase = false;
-            MaxSpawnDistance = 300;
             SchematicsDatabaseInfo = new DatabaseInfo
             {
                 DatabaseAddress = "localhost",

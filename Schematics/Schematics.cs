@@ -25,8 +25,15 @@ using Logger = Rocket.Core.Logging.Logger;
 
 namespace Pandahut.Schematics
 {
+    extern alias UnityEnginePhysics;
+
     public class Schematics : RocketPlugin<SchematicsConfiguration>
     {
+        public class RectangleSelection
+        {
+            public Vector3 Position1;
+            public Vector3 Position2;
+        }
         public class Schematic
         {
             public int id;
@@ -39,20 +46,23 @@ namespace Pandahut.Schematics
         }
         public static Regex steamid64Regex = new Regex(@"/[0-9]{17}/", RegexOptions.Compiled);
         public static Schematics Instance;
-        public static byte PluginVerison = 1;
+        public static byte PluginVerison = 2;
         public DatabaseManager SchematicsDatabaseManager;
+        public Dictionary<CSteamID, RectangleSelection> RectangleSelectionDictionary = new Dictionary<CSteamID, RectangleSelection>();
         protected override void Load()
         {
-            ConfigCheck();
             Instance = this;
+            ConfigCheck();
             if (Configuration.Instance.UseDatabase)
             {
                 SchematicsDatabaseManager = new DatabaseManager();
-                System.IO.DirectoryInfo di = new DirectoryInfo(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/");
+                try
+                {
+                    System.IO.DirectoryInfo di = new DirectoryInfo(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/");
                 foreach (FileInfo file in di.GetFiles())
                 {
                     var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{file.Name}", isReading: true);
-                    try
+                        try
                     {
                         var verison = river.readByte();
                         var useDatabase = river.readBoolean();
@@ -64,7 +74,11 @@ namespace Pandahut.Schematics
                     {
                         river.closeRiver();
                     }
+                    }
 
+                }
+                catch (Exception _)
+                {
                 }
             }
 
@@ -98,12 +112,6 @@ namespace Pandahut.Schematics
                     DatabasePort = 3306
                 };
                 Configuration.Instance.UseDatabase = false;
-                Configuration.Save();
-            }
-            if (Configuration.Instance.MaxSpawnDistance == null)
-            {
-                Logger.Log($"You're missing MaxSpawnDistance in Config, defaulting to 300");
-                Configuration.Instance.MaxSpawnDistance = 300;
                 Configuration.Save();
             }
         }

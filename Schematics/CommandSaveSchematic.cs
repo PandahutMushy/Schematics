@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using Rocket.API;
 using Rocket.Unturned.Chat;
 using Rocket.Unturned.Player;
@@ -15,23 +14,28 @@ namespace Pandahut.Schematics
     {
         public BarricadeData bdata;
         public bool plant;
-        public BarricadeDataInternal(BarricadeData structureData, bool Plant)
+        public Transform transform;
+
+        public BarricadeDataInternal(BarricadeData structureData, bool Plant, Transform transform)
         {
-            this.bdata = structureData;
-            this.plant = Plant;
+            bdata = structureData;
+            plant = Plant;
+            this.transform = transform;
         }
     }
+
     public class StructureDataInternal
     {
-        public StructureData sdata;
         public bool plant;
+        public StructureData sdata;
 
         public StructureDataInternal(StructureData structureData, bool Plant)
         {
-            this.sdata = structureData;
-            this.plant = Plant;
+            sdata = structureData;
+            plant = Plant;
         }
     }
+
     internal class CommandSaveSchematics : IRocketCommand
     {
         public string Help => "Saves Schematic";
@@ -51,10 +55,23 @@ namespace Pandahut.Schematics
             // Command: /saveSchematic
             var player = (UnturnedPlayer) caller;
 
-            if (command == null || command.Length == 0 || command.Length == 1 || string.IsNullOrWhiteSpace(command[0]) || !int.TryParse(command[1], out var radius))
+            if (command == null || command.Length == 0 || command.Length == 1 || string.IsNullOrWhiteSpace(command[0]))
             {
                 UnturnedChat.Say(player, "Invalid Syntax, use /SaveSchematic <name> <distance> [Optional Parameters: -Owner (Only gets structures placed by you) -Group (only gets structures placed by your current group), Input any Steamid64 to only get results from it");
                 return;
+            }
+
+            var Rectangle = false;
+            if (!int.TryParse(command[1], out var radius))
+            {
+                if (Schematics.Instance.RectangleSelectionDictionary.ContainsKey(player.CSteamID))
+                    if (Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position1 != Vector3.zero && Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position2 != Vector3.zero)
+                        Rectangle = true;
+                if (!Rectangle)
+                {
+                    UnturnedChat.Say(player, "Invalid Syntax, use /SaveSchematic <name> <distance or /select <1,2> [Optional Parameters: -Owner (Only gets structures placed by you) -Group (only gets structures placed by your current group), Input any Steamid64 to only get results from it");
+                    return;
+                }
             }
 
             var fullcommand = string.Join(" ", command).ToLower();
@@ -67,11 +84,12 @@ namespace Pandahut.Schematics
             var match = Schematics.steamid64Regex.Match(fullcommand);
             if (match.Success && ulong.TryParse(match.Value, out var result))
                 SpecificSteamid64 = result;
-            Logger.Log($"Specific Steamid64: {SpecificSteamid64}, Group Only: {GroupOnly}");
+            var setsteamid64string = SpecificSteamid64 == 0 ? "false" : SpecificSteamid64.ToString();
+            Logger.Log($"Specific Steamid64: {setsteamid64string}, Group Only: {GroupOnly}");
             radius += 92;
             var name = command[0].Replace(" ", "");
-            var Barricades = GetBarricadeTransforms(player, radius, SpecificSteamid64, GroupOnly);
-            var Structures = GetStructureTransforms(player, radius, SpecificSteamid64, GroupOnly);
+            var Barricades = GetBarricadeTransforms(player, radius, SpecificSteamid64, GroupOnly, Rectangle);
+            var Structures = GetStructureTransforms(player, radius, SpecificSteamid64, GroupOnly, Rectangle);
             //Logger.Log($"We have found Structures: {Structures.Count}  and Barricades: {Barricades.Count}");
             var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", false);
             river.writeByte(Schematics.PluginVerison);
@@ -81,7 +99,7 @@ namespace Pandahut.Schematics
             river.writeInt32(Barricades.Count);
             river.writeInt32(Structures.Count);
             foreach (var bdata in Barricades)
-            { 
+            {
                 river.writeUInt16(bdata.bdata.barricade.id);
                 river.writeUInt16(bdata.bdata.barricade.health);
                 river.writeBytes(bdata.bdata.barricade.state);
@@ -91,8 +109,8 @@ namespace Pandahut.Schematics
                 river.writeByte(bdata.bdata.angle_z);
                 river.writeUInt64(bdata.bdata.owner);
                 river.writeUInt64(bdata.bdata.group);
-                river.writeUInt32(bdata.bdata.objActiveDate);
             }
+
             foreach (var sdata in Structures)
             {
                 river.writeUInt16(sdata.sdata.structure.id);
@@ -103,7 +121,6 @@ namespace Pandahut.Schematics
                 river.writeByte(sdata.sdata.angle_z);
                 river.writeUInt64(sdata.sdata.owner);
                 river.writeUInt64(sdata.sdata.group);
-                river.writeUInt32(sdata.sdata.objActiveDate);
             }
 
             river.closeRiver();
@@ -121,12 +138,15 @@ namespace Pandahut.Schematics
                 {
                     Logger.Log("Issue uploading file to your database, it has been saved locally instead.");
                 }
-            
+
             SendMessageAndLog(player, $"Done, we have saved Structures: {Structures.Count} and Barricades: {Barricades.Count} to {(Schematics.Instance.Configuration.Instance.UseDatabase ? "Database and Files" : "Files")} called {name}.", $"Saved {Structures.Count + Barricades.Count} elements for {player.CharacterName} to {(Schematics.Instance.Configuration.Instance.UseDatabase ? "Database and Files" : "Files")} called {name}.");
         }
 
-        public List<StructureDataInternal> GetStructureTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly)
+        public List<StructureDataInternal> GetStructureTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly, bool Rectangle)
         {
+            float Distance;
+            Vector3 Center;
+            Rect rect;
             var position = player.Position;
             var error = 0;
             var Structures = new List<StructureDataInternal>();
@@ -144,6 +164,7 @@ namespace Pandahut.Schematics
                 Regions.tryGetPoint((byte) x, (byte) y, out pointVector3);
                 if (Vector3.Distance(pointVector3 += new Vector3(64, 0, 64), new Vector3(position.x, 0f, position.z)) > radius)
                     continue;
+
                 regionsused++;
                 structureRegion = StructureManager.regions[x, y];
                 transforms = structureRegion.drops.Count;
@@ -151,7 +172,12 @@ namespace Pandahut.Schematics
                 {
                     transform = structureRegion.drops[i].model;
                     var Plant = transform.parent != null && transform.parent.CompareTag("Vehicle");
-                        if (structureRegion.structures[i] == null) { error++;  continue;}
+                    if (structureRegion.structures[i] == null)
+                    {
+                        error++;
+                        continue;
+                    }
+
                     structure = structureRegion.structures[i];
                     if (GroupOnly)
                         if (structure.group != player.SteamGroupID.m_SteamID)
@@ -159,10 +185,14 @@ namespace Pandahut.Schematics
                     if (SpecificSteamid64 != 0)
                         if (structure.owner != SpecificSteamid64)
                             continue;
-                    if (Vector3.Distance(position, transform.position) < radius - 92 && !Plant)
+                    if ( !Rectangle && Vector3.Distance(position, transform.position) < radius - 92 && !Plant)
                         Structures.Add(new StructureDataInternal(structureRegion.structures[i], transform.parent != null && transform.parent.CompareTag("Vehicle") ? true : false));
+                        else if (Rectangle && Vector3.Distance(transform.position, Center) < )
+                        {
+
+                        }
+                     }
                 }
-            }
 
             //Logger.Log($"We have found {regionsfound} regions and used {regionsused} of them.");
             if (error != 0)
@@ -170,7 +200,7 @@ namespace Pandahut.Schematics
             return Structures;
         }
 
-        public List<BarricadeDataInternal> GetBarricadeTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly)
+        public List<BarricadeDataInternal> GetBarricadeTransforms(UnturnedPlayer player, int radius, ulong SpecificSteamid64, bool GroupOnly, bool Rectangle)
         {
             var position = player.Position;
             var error = 0;
@@ -198,7 +228,7 @@ namespace Pandahut.Schematics
                 {
                     transform = barricadeRegion.drops[i].model;
                     Plant = transform.parent != null && transform.parent.CompareTag("Vehicle");
-                        if (barricadeRegion.barricades[i] == null)
+                    if (barricadeRegion.barricades[i] == null)
                     {
                         error++;
                         continue;
@@ -213,7 +243,7 @@ namespace Pandahut.Schematics
                             continue;
 
                     if (Vector3.Distance(position, transform.position) < radius - 92 && !Plant)
-                        Barricades.Add(new BarricadeDataInternal(barricadeRegion.barricades[i], transform.parent != null && transform.parent.CompareTag("Vehicle") ? true : false));
+                        Barricades.Add(new BarricadeDataInternal(barricadeRegion.barricades[i], transform.parent != null && transform.parent.CompareTag("Vehicle") ? true : false, transform != null ? transform : null));
                 }
             }
 
@@ -227,6 +257,11 @@ namespace Pandahut.Schematics
         {
             UnturnedChat.Say(player, playermsg);
             Logger.Log(consolemsg);
+        }
+        
+        public Vector3 CenterVector3(UnturnedPlayer player)
+        {
+          return Vector3.Lerp(Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position1, Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position2, 0.5f);
         }
     }
 }

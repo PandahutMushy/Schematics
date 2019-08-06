@@ -40,12 +40,8 @@ namespace Pandahut.Schematics
                 UnturnedChat.Say(caller, $"Cannot get what you're aiming at to spawn the schematic.");
                 return;
             }
+            hit.point += new Vector3(0, 1, 0);
 
-            if (Schematics.Instance.Configuration.Instance.MaxSpawnDistance != 0 && Vector3.Distance(player.Position, hit.point) > Schematics.Instance.Configuration.Instance.MaxSpawnDistance)
-            {
-                UnturnedChat.Say(caller, $"You're looking at a position that is over your MaxSpawnDistance defined in Configuration.");
-                return;
-            }
             var fullcommand = string.Join(" ", command).ToLower();
             var keepLocation = false;
             var keepHealth = false;
@@ -74,13 +70,17 @@ namespace Pandahut.Schematics
                    UnturnedChat.Say(caller, $"Cannot find {name} in Database");
                    return;
                }
-               var fs = new FileStream(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat", FileMode.Create, FileAccess.ReadWrite);
-               fs.Write(Schematic.SchmeticBytes, 0, (int)Schematic.Length);
+               var fs = new FileStream(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat", FileMode.Create, FileAccess.Write);
+               fs.Write(Schematic.SchmeticBytes, 0, Schematic.SchmeticBytes.Length);
                fs.Close();
             }
             River river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: true);
-            
             byte verison = river.readByte();
+            if (verison == 1)
+            {
+                UnturnedChat.Say(caller, $"Cannot load {name} as it was saved on a different version which is no longer compatible");
+                return;
+            }
             var useDatabase = river.readBoolean();
             var Time = river.readUInt32();
             if (DateTimeOffset.FromUnixTimeSeconds(Time).ToLocalTime() == DateTimeOffset.MinValue)
@@ -90,7 +90,9 @@ namespace Pandahut.Schematics
             }
             var playerposition = river.readSingleVector3();
             UnturnedChat.Say(player, $"Loading {name} saved at {DateTimeOffset.FromUnixTimeSeconds(Time).ToLocalTime().ToString()}");
-            Logger.Log($"Loading {name} for {player.CharacterName} with parameters Keep Position: {keepLocation}, Keep Health: {keepHealth}, Keep State: {keepState}, Set Group = {SpecificSteamid64} Set Steamid64: {SpecificSteamid64}.");
+            var setgroupstring = specificgroup == 0 ? "false" : specificgroup.ToString();
+            var setsteamid64string = SpecificSteamid64 == 0 ? "false" : SpecificSteamid64.ToString();
+            Logger.Log($"Loading {name} for {player.CharacterName} with parameters Keep Position: {keepLocation}, Keep Health: {keepHealth}, Keep State: {keepState}, Set Group = {setgroupstring} Set Steamid64: {setsteamid64string}.");
             var barricadecountInt32 = river.readInt32();
             var structurecountInt32 = river.readInt32();
             int error = 0;
@@ -105,7 +107,6 @@ namespace Pandahut.Schematics
                var angleZ = river.readByte();
                var owner = river.readUInt64();
                var group =  river.readUInt64();
-               var objActiveDate = river.readUInt32();
                Barricade barricade = new Barricade(barricadeid);
                if (keepHealth)
                    barricade.health = barricadehealth;
@@ -114,15 +115,24 @@ namespace Pandahut.Schematics
                if (!keepLocation)
                {
                    point = (point - playerposition) + hit.point;
-               }
+               } 
                if (SpecificSteamid64 != 0)
                    owner = SpecificSteamid64;
                if (specificgroup != 0)
                    group = specificgroup;
                var rotation = Quaternion.Euler(angleX * 2, angleY * 2, angleZ * 2);
                 //rotation.eulerAngles = new Vector3(angleX, angleY, angleZ);
-               if (!BarricadeManager.dropNonPlantedBarricade(barricade, point, rotation , owner, group))
-                   error++;
+                var barricadetransform = BarricadeManager.dropNonPlantedBarricade(barricade, point, rotation, owner, group);
+                if (barricadetransform == null)
+                {
+                    error++;
+                    return;
+                }
+                var InteractableStorage = barricadetransform.GetComponent<SDG.Unturned.InteractableStorage>();
+                if (InteractableStorage != null)
+                {
+                    BarricadeManager.sendStorageDisplay(barricadetransform, InteractableStorage.displayItem, InteractableStorage.displaySkin, InteractableStorage.displayMythic, InteractableStorage.displayTags, InteractableStorage.displayDynamicProps);
+                }
             }
             if (error != 0)
                 Logger.Log($"Unexpected Barricade Error occured {error} times");
@@ -137,7 +147,6 @@ namespace Pandahut.Schematics
                var angleZ = river.readByte();
                var owner = river.readUInt64();
                var group = river.readUInt64();
-               var objActiveDate = river.readUInt32();
                Structure structure = new Structure(structureid);
                if (keepHealth)
                    structure.health = structurehealth;

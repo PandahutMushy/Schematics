@@ -44,8 +44,6 @@ namespace Pandahut.Schematics
                         SendMessage(caller, $"Can't find file with name of {name} in files. May of never been on this server in first place.", Console);
                         return;
                     }
-                    var fileStream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read);
-                    var binaryReader = new BinaryReader(fileStream);
                     var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: true);
                     try
                     {
@@ -56,6 +54,8 @@ namespace Pandahut.Schematics
                     var barricadecountInt32 = river.readInt32();
                     var structurecountInt32 = river.readInt32();
                     river.closeRiver();
+                    var fileStream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read);
+                    var binaryReader = new BinaryReader(fileStream);
                     Schematics.Instance.SchematicsDatabaseManager.AddSchematic(name, GetName(caller, Console), Provider.serverName, binaryReader.ReadBytes((int)fileStream.Length), (int)fileStream.Length, barricadecountInt32 + structurecountInt32);
                     binaryReader.Close();
                     fileStream.Close();
@@ -65,7 +65,7 @@ namespace Pandahut.Schematics
                     catch (Exception e)
                     {
                         river.closeRiver();
-                        SendMessage(caller, "Issue uploading file to your database, wrong name or file has wrong format.", Console);
+                        SendMessage(caller, "Issue uploading file to your database, bad name or file has wrong format.", Console);
                         return;
                     }
                 }

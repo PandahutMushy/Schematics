@@ -29,7 +29,7 @@ namespace Pandahut.Schematics
                     Logger.LogError("Schematics failed to connect to MySQL database host.");
                 else
                     Logger.LogException(ex);
-                Logger.Log($"Cannot connect to Database! Falling back to local storage");
+                Logger.Log($"Cannot connect to Database! Check your MySQL Information defined in Configuration.");
                 Pandahut.Schematics.Schematics.Instance.UnloadPlugin();
             }
         }

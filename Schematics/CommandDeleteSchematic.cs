@@ -46,17 +46,21 @@ namespace Pandahut.Schematics
                 }
                 var success =  Schematics.Instance.SchematicsDatabaseManager.DeleteSchematic(Schematic.id);
                  if (success)
-                     SendMessage(caller, $"Successfully deleted {Schematic.SchematicName} from Database.", Console);
+                     SendMessage(caller, $"Successfully deleted {Schematic.SchematicName} from Database, it'll be automatically deleted from your files on next restart.", Console);
                  else
                      SendMessage(caller, $"Failed deleting {Schematic.SchematicName} from Database, most likely not enough database permissions.", Console);
             }
-
+            else
+            {
+                SendMessage(caller, $"You do not have database enabled, if you want to delete a file schematic, you can just delete it manually.", Console);
+                return;
+            }
             try
             {
                 var file = new FileInfo(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat");
-                if (file == null || !file.Exists)
+                if (!file.Exists && !Schematics.Instance.Configuration.Instance.UseDatabase)
                 {
-                    SendMessage(caller, $"Can't find file with name of {name} in files. May of never been on this server in first place.", Console);
+                    SendMessage(caller, $"Can't find file with name of {name} in files.", Console);
                     return;
                 }
                 file.Delete();
@@ -64,7 +68,7 @@ namespace Pandahut.Schematics
             }
             catch (Exception e)
             {
-                SendMessage(caller, $"File is in use, printing error to your logs.", Console);
+                SendMessage(caller, $"File is in use, printing error to your logs. File will most likely go away on next restart if it was saved with database enabled, or you can delete yourself.", Console);
                 Logger.LogError(e.Message);
             }
 
