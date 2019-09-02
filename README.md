@@ -11,7 +11,7 @@
 
 
 ## Usage:
-- Essentially, you would do /ss Testing 50 to save elements around you, and do /ls Testing and it would plop that same thing you just saved whereever your crosshair is. There is a lot of controllable things, but it's important to keep in mind the positions of the elements are saved relative to your position on saving them. If you can imagine wherever you're aiming is where you were standing when you saved it as well as all of the elements around you (within range) will all be duplicated to whereever you are aiming (Note: does not duplicate you too :)
+- Essentially, you would do /ss Testing 50 to save elements around you, and do /ls Testing and it would plop that same thing you just saved whereever your crosshair is. There is a lot of controllable things, but it's important to keep in mind the positions of the elements are saved relative to your position on saving them. If you can imagine wherever you're aiming is where you were standing when you saved it, all of the elements will be replicated relative to that position.
 
 
 - LoadSchematic (/ls):  <Name> [Optional: -KeepPos (Keeps -NoState -KeepHealth -SetOwner -SetGroup, Input any Steamid64 to set owner to it]. 
