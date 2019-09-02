@@ -24,7 +24,7 @@
 - SaveSchematic (/ss): /SaveSchematic <name> <distance> [Optional Parameters: -Owner  -Group, Input any Steamid64 to only get results from it
   - Owner only grabs elements owned by you
   - Group only grabs elements owned by your group
- - inputting any Steamid64 (76561198138254281) will only grab elements owned by it.
+  - inputting any Steamid64 (76561198138254281) will only grab elements owned by it.
  
 ## Known bugs
 - Specific Steamid64 is buggy and sometimes doesn't work, will look into it tommorow
