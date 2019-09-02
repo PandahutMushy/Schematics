@@ -7,7 +7,7 @@ using Rocket.Unturned.Player;
 using SDG.Unturned;
 using UnityEngine;
 using Logger = Rocket.Core.Logging.Logger;
-
+// These aren't done and are set to not Compile
 namespace Pandahut.Schematics
 {
     extern alias UnityEnginePhysics;

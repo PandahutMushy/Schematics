@@ -61,6 +61,7 @@ namespace Pandahut.Schematics
                 return;
             }
 
+            // Rectangles are planned but not done rn
             var Rectangle = false;
             if (!int.TryParse(command[1], out var radius))
             {
@@ -69,11 +70,13 @@ namespace Pandahut.Schematics
                         Rectangle = true;
                 if (!Rectangle)
                 {
-                    UnturnedChat.Say(player, "Invalid Syntax, use /SaveSchematic <name> <distance or /select <1,2> [Optional Parameters: -Owner (Only gets structures placed by you) -Group (only gets structures placed by your current group), Input any Steamid64 to only get results from it");
+                    UnturnedChat.Say(player, "Invalid Syntax, use /SaveSchematic <name> <distance> [Optional Parameters: -Owner (Only gets structures placed by you) -Group (only gets structures placed by your current group), Input any Steamid64 to only get results from it");
+                    //UnturnedChat.Say(player, "Invalid Syntax, use /SaveSchematic <name> <distance> or /select <1,2> [Optional Parameters: -Owner (Only gets structures placed by you) -Group (only gets structures placed by your current group), Input any Steamid64 to only get results from it");
                     return;
                 }
             }
 
+            // This is lazy, probably better way to do it then using Contains.
             var fullcommand = string.Join(" ", command).ToLower();
             ulong SpecificSteamid64 = 0;
             var GroupOnly = false;
@@ -185,14 +188,15 @@ namespace Pandahut.Schematics
                     if (SpecificSteamid64 != 0)
                         if (structure.owner != SpecificSteamid64)
                             continue;
-                    if ( !Rectangle && Vector3.Distance(position, transform.position) < radius - 92 && !Plant)
+                    if (Rectangle == false && Vector3.Distance(position, transform.position) < radius - 92 && !Plant)
                         Structures.Add(new StructureDataInternal(structureRegion.structures[i], transform.parent != null && transform.parent.CompareTag("Vehicle") ? true : false));
-                        else if (Rectangle && Vector3.Distance(transform.position, Center) < )
+                    /* Rectangle Stuff
+                        else if (Rectangle && Vector3.Distance(transform.position, Center) < 0)
                         {
 
-                        }
-                     }
+                        } */
                 }
+            }
 
             //Logger.Log($"We have found {regionsfound} regions and used {regionsused} of them.");
             if (error != 0)
@@ -258,10 +262,11 @@ namespace Pandahut.Schematics
             UnturnedChat.Say(player, playermsg);
             Logger.Log(consolemsg);
         }
-        
+
+        //Not sure if this works, to be perfectly honest
         public Vector3 CenterVector3(UnturnedPlayer player)
         {
-          return Vector3.Lerp(Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position1, Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position2, 0.5f);
+            return Vector3.Lerp(Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position1, Schematics.Instance.RectangleSelectionDictionary[player.CSteamID].Position2, 0.5f);
         }
     }
 }

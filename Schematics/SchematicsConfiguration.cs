@@ -1,15 +1,12 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using Rocket.API;
-using Steamworks;
+﻿using Rocket.API;
 
 namespace Pandahut.Schematics
 {
     public class SchematicsConfiguration : IRocketPluginConfiguration
     {
+        public DatabaseInfo SchematicsDatabaseInfo;
 
         public bool UseDatabase;
-        public DatabaseInfo SchematicsDatabaseInfo;
 
         public void LoadDefaults()
         {
@@ -25,6 +22,7 @@ namespace Pandahut.Schematics
             };
         }
     }
+
     public class DatabaseInfo
     {
         public string DatabaseAddress;

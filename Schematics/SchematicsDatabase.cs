@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Threading;
 using I18N.West;
 using MySql.Data.MySqlClient;
-using UnityEngine;
-using Logger = Rocket.Core.Logging.Logger;
+using Rocket.Core.Logging;
 
 namespace Pandahut.Schematics
 {
@@ -29,8 +25,8 @@ namespace Pandahut.Schematics
                     Logger.LogError("Schematics failed to connect to MySQL database host.");
                 else
                     Logger.LogException(ex);
-                Logger.Log($"Cannot connect to Database! Check your MySQL Information defined in Configuration.");
-                Pandahut.Schematics.Schematics.Instance.UnloadPlugin();
+                Logger.Log("Cannot connect to Database! Check your MySQL Information defined in Configuration.");
+                Schematics.Instance.UnloadPlugin();
             }
         }
 
@@ -49,6 +45,7 @@ namespace Pandahut.Schematics
 
             return connection;
         }
+
         internal void CreateSchematicsDatabaseScheme()
         {
             try
@@ -73,9 +70,9 @@ namespace Pandahut.Schematics
                 Logger.LogException(ex);
             }
         }
+
         public Schematics.Schematic GetSchematicByName(string Name)
         {
-
             try
             {
                 var connection = CreateConnection();
@@ -88,7 +85,7 @@ namespace Pandahut.Schematics
                 {
                     schematic.id = Convert.ToInt32(dataReader["id"]);
                     schematic.SchematicName = Convert.ToString(dataReader["Name"]);
-                    schematic.SchmeticBytes = (byte[])(dataReader["Schematic"]);
+                    schematic.SchmeticBytes = (byte[]) dataReader["Schematic"];
                     schematic.Length = Convert.ToInt32(dataReader["Length"]);
                     schematic.Madeby = Convert.ToString(dataReader["Madeby"]);
                     schematic.MadeAt = Convert.ToDateTime(dataReader["MadeAt"]);
@@ -108,6 +105,7 @@ namespace Pandahut.Schematics
                 return null;
             }
         }
+
         public void AddSchematic(string Name, string Madeby, string MadeIn, byte[] blob, int length, int TotalElementCount)
         {
             try
@@ -131,6 +129,7 @@ namespace Pandahut.Schematics
                 Logger.LogException(ex);
             }
         }
+
         public bool DeleteSchematic(int id)
         {
             try

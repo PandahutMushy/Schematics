@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using Rocket.API;
+using Rocket.Core.Logging;
 using Rocket.Unturned.Chat;
-using Rocket.Unturned.Player;
 using SDG.Unturned;
-using UnityEngine;
-using Logger = Rocket.Core.Logging.Logger;
 
 namespace Pandahut.Schematics
 {
@@ -29,13 +26,14 @@ namespace Pandahut.Schematics
 
         public void Execute(IRocketPlayer caller, string[] command)
         {
-            bool Console = caller is ConsolePlayer;
+            var Console = caller is ConsolePlayer;
             if (command == null || command.Length == 0 || string.IsNullOrWhiteSpace(command[0]))
             {
-                SendMessage(caller, $"Invalid Syntax, use /ViewSchematic <Name>", Console);
+                SendMessage(caller, "Invalid Syntax, use /ViewSchematic <Name>", Console);
                 return;
             }
-            string name = command[0].Replace(" ", "");
+
+            var name = command[0].Replace(" ", "");
             if (Schematics.Instance.Configuration.Instance.UseDatabase)
             {
                 var Schematic = Schematics.Instance.SchematicsDatabaseManager.GetSchematicByName(name);
@@ -46,11 +44,11 @@ namespace Pandahut.Schematics
                 }
 
                 var fs = new FileStream(ReadWrite.PATH + ServerSavedata.directory + "/" + Provider.serverID + $"/Rocket/Plugins/Schematics/Saved/{name}.dat", FileMode.Create, FileAccess.ReadWrite);
-                fs.Write(Schematic.SchmeticBytes, 0, (int) Schematic.Length);
+                fs.Write(Schematic.SchmeticBytes, 0, Schematic.Length);
                 fs.Close();
             }
 
-            var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", isReading: true);
+            var river = ServerSavedata.openRiver($"/Rocket/Plugins/Schematics/Saved/{name}.dat", true);
             var verison = river.readByte();
             var useDatabase = river.readBoolean();
             var Time = river.readUInt32();
