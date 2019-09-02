@@ -7,10 +7,12 @@ namespace Pandahut.Schematics
         public DatabaseInfo SchematicsDatabaseInfo;
 
         public bool UseDatabase;
+        public float MaxDistanceToLoadSchematic;
 
         public void LoadDefaults()
         {
             UseDatabase = false;
+            MaxDistanceToLoadSchematic = 400;
             SchematicsDatabaseInfo = new DatabaseInfo
             {
                 DatabaseAddress = "localhost",

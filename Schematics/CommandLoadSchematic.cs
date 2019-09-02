@@ -36,14 +36,15 @@ namespace Pandahut.Schematics
                 return;
             }
 
-            if (!UnityEngine.Physics.Raycast(player.Player.look.aim.position, player.Player.look.aim.forward, out var hit))
+            if (!UnityEnginePhysics::UnityEngine.Physics.Raycast(player.Player.look.aim.position, player.Player.look.aim.forward, out var hit))
             {
                 UnturnedChat.Say(caller, "Cannot get what you're aiming at to spawn the schematic.");
                 return;
             }
 
-            hit.point += new Vector3(0, 1, 0);
 
+            // Trying to get better spot where they're aiming, so the schematic doesn't just spawn straight in the floor
+            hit.point += new Vector3(0, 1, 0);
             var fullcommand = string.Join(" ", command).ToLower();
             var keepLocation = false;
             var keepHealth = false;
@@ -52,7 +53,12 @@ namespace Pandahut.Schematics
             ulong specificgroup = 0;
             if (fullcommand.Contains("-keeppos"))
                 keepLocation = true;
-            if (fullcommand.Contains("-health"))
+            if (keepLocation == false && Schematics.Instance.Configuration.Instance.MaxDistanceToLoadSchematic != 0 && hit.distance > Schematics.Instance.Configuration.Instance.MaxDistanceToLoadSchematic)
+            {
+                UnturnedChat.Say(caller, "You are aiming to somewhere past the configurable Max Distance to Load Schematic.");
+                return;
+            }
+            if (fullcommand.Contains("-keephealth"))
                 keepHealth = true;
             if (fullcommand.Contains("-nostate"))
                 keepState = false;
@@ -60,6 +66,7 @@ namespace Pandahut.Schematics
                 SpecificSteamid64 = player.CSteamID.m_SteamID;
             if (fullcommand.Contains("-setgroup"))
                 specificgroup = player.Player.quests.groupID.m_SteamID;
+
             var match = Schematics.steamid64Regex.Match(fullcommand);
             if (match.Success && ulong.TryParse(match.Value, out var result))
                 SpecificSteamid64 = result;

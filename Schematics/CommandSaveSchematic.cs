@@ -80,9 +80,9 @@ namespace Pandahut.Schematics
             var fullcommand = string.Join(" ", command).ToLower();
             ulong SpecificSteamid64 = 0;
             var GroupOnly = false;
-            if (fullcommand.Contains("-Owner"))
+            if (fullcommand.Contains("-owner"))
                 SpecificSteamid64 = player.CSteamID.m_SteamID;
-            if (fullcommand.Contains("-Group"))
+            if (fullcommand.Contains("-group"))
                 GroupOnly = true;
             var match = Schematics.steamid64Regex.Match(fullcommand);
             if (match.Success && ulong.TryParse(match.Value, out var result))
