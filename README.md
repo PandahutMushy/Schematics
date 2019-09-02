@@ -14,14 +14,14 @@
 - Essentially, you would do /ss Testing 50 to save elements around you, and do /ls Testing and it would plop that same thing you just saved whereever your crosshair is. There is a lot of controllable things, but it's important to keep in mind the positions of the elements are saved relative to your position on saving them. If you can imagine wherever you're aiming is where you were standing when you saved it as well as all of the elements around you (within range) will all be duplicated to whereever you are aiming (Note: does not duplicate you too :)
 
 
--LoadSchematic (/ls):  <Name> [Optional: -KeepPos (Keeps -NoState -KeepHealth -SetOwner -SetGroup, Input any Steamid64 to set owner to it]. 
+- LoadSchematic (/ls):  <Name> [Optional: -KeepPos (Keeps -NoState -KeepHealth -SetOwner -SetGroup, Input any Steamid64 to set owner to it]. 
   -  KeepPos loads the schematic in at the saved position inside of the dat file
   - KeepHealth keeps the saved health
   - SetOwner sets Owner to you
   -SetGroup sets group to you
   -inputting any Steamid64 (76561198138254281) will set the elements to be owned by you.
   
--SaveSchematic (/ss): /SaveSchematic <name> <distance> [Optional Parameters: -Owner  -Group, Input any Steamid64 to only get results from it
+- SaveSchematic (/ss): /SaveSchematic <name> <distance> [Optional Parameters: -Owner  -Group, Input any Steamid64 to only get results from it
   - Owner only grabs elements owned by you
   - Group only grabs elements owned by your group
  - inputting any Steamid64 (76561198138254281) will only grab elements owned by it.
