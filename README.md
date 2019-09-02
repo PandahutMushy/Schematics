@@ -32,4 +32,4 @@
 - Specific Steamid64 is buggy and sometimes doesn't work, will look into it tommorow
 
 ## Disclaimer:
-- This plugin is super light and only does anything on you doing it, it's entirely sync meaning if your database has a ping of 9000ms, it will block the main game thread for 9000ms until it gets a response, there is plans to make it async in the future but it really doesn't matter from my testing, if your database has a reasonable ping it'll be fine.
+- This plugin is super light and only does anything on you doing it, it's entirely sync meaning if your database has a ping of 9000ms, it will block the main game thread for 9000ms until it gets a response, there is plans to make it async in the future but it really doesn't matter from my testing, if your database has a reasonable ping it'll be fine. (Keep in mind, a ton of things are sync anyway, Uconomy, Zaupshop, Playerinfolib, etc)
