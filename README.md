@@ -5,7 +5,7 @@
 - Either just plop in, or just plop in and edit in your Mysql Configuration
 
 ## Configuration:
-- SchematicsDatabaseInfo:Fill in your database info here and set UseDatabase to true
+- SchematicsDatabaseInfo: Fill in your database info here and set UseDatabase to true
 
 - UseDatabase: Set to true if you want to use your database.
 
