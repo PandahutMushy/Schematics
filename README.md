@@ -13,7 +13,7 @@
 
 
 ## Usage:
-- Essentially, you would do /ss Testing 50 to save elements around you, and do /ls Testing and it would plop that same thing you just saved whereever your crosshair is. There is a lot of controllable things, but it's important to keep in mind the positions of the elements are saved relative to your position on saving them. If you can imagine wherever you're aiming is where you were standing when you saved it, all of the elements will be replicated relative to that position.
+- Essentially, you would do /ss Testing 50 to save elements around you, and do /ls Testing and it would plop that same thing you just saved whereever your crosshair is. There are a lot of controllable things, but it's important to keep in mind the positions of the elements are saved relative to your position on saving them. If you can imagine wherever you're aiming is where you were standing when you saved it, all of the elements will be replicated relative to that position.
 
 
 - LoadSchematic (/ls):  <Name> [Optional: -KeepPos (Keeps -NoState -KeepHealth -SetOwner -SetGroup, Input any Steamid64 to set owner to it]. 
@@ -30,4 +30,4 @@
  
 
 ## Disclaimer:
-- This plugin is super light and only does anything on you doing it, it's entirely sync meaning if your database has a ping of 9000ms, it will block the main game thread for 9000ms until it gets a response, there is plans to make it async in the future but it really doesn't matter from my testing, if your database has a reasonable ping it'll be fine. (Keep in mind, a ton of things are sync anyway, Uconomy, Zaupshop, Playerinfolib, etc)
+- This plugin is super light and only does anything on you doing it, it's entirely sync meaning if your database has a ping of 9000ms, it will block the main game thread for 9000ms until it gets a response, there are plans to make it async in the future but it really doesn't matter from my testing, if your database has a reasonable ping it'll be fine. (Keep in mind, a ton of things are sync anyway, Uconomy, Zaupshop, Playerinfolib, etc)
